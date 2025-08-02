@@ -1,42 +1,108 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+body {
+  font-size: 1.2rem;
+  justify-content: center;
+}
+
+h1 {
+  font-size: 2.5rem;
+}
+
+h2 {
+  margin-right: 1rem;
+}
+
+.alignitemscenter {
+  align-items: center;
+}
+
+.border {
+  border: 2px solid black;
+  margin: 0.5rem;
+  padding: 1rem;
+  border-radius: 16px;
+}
+
+.count-text {
+  width: 20rem;
+  margin-right: 8px;
+}
+
+.dark .border {
+  border: 2px solid yellow;
+}
+
+.dark {
+  background-color: black;
+  color:azure;
+}
+
+button {
+  background-color: lightgray;
+  border: 2px solid black;
+  width: 8rem;
+  margin: 8px;
+}
+
+button:focus {
+  background-color: blue;
+  color: white;
+}
+
+button:hover{
+  background-color: aqua;
+}
+
+.dark button {
+  background-color: darkblue;
+  border: 2px solid yellow;
+  color: yellow;
+}
+
+.dark button:focus {
+  background-color: purple;
+}
+
+.dark button:hover {
+  background-color: darkgreen;
+}
+
+input {
+  font-size: 1.5rem;
+  width: 6rem;
+}
+
+.dark input {
+  background-color: black;
+  color: white; 
+}
+
+.flexh {
+  display: flex;
+}
+
+.focusme:focus {
+  background-color: green;
+  color: white;
+  border: 1px solid yellow;
+}
+
+.jc-center {
+  justify-content: center;
+}
+
+.jc-spacebetween {
+  justify-content: space-between;
+}
+
+.reset-count {
+  width: 12rem;
+}
+
+.textaligncenter {
   text-align: center;
+  padding: 12px;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+.vw100 {
+  width: 100vw;
 }
