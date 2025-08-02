@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import './App.css'
 
 const App: React.FunctionComponent = (): React.ReactNode => {
@@ -27,27 +27,30 @@ const App: React.FunctionComponent = (): React.ReactNode => {
     });
   }
 
-  const handleKeyDown = (event: any) => {
-    console.log(`handleKeyDown detects ${event.code} while focused ${focused}`)
+  const handleKeyDown = useCallback((event: any) => {
+    console.log(`handleKeyDown detects ${event.code} while  . .`);
     if (event.code === 'ArrowUp') { // arrowup 0xE048
       console.log('up');
     } else if (event.code === 'ArrowDown') { // arrowdown 0xE050
       console.log('down');
     }
-  }
+  }, []) // dependencies: The list of all reactive values referenced inside of the fn code. Reactive values include props, state, and all the variables and functions declared directly inside your component body. If your linter is configured for React, it will verify that every reactive value is correctly specified as a dependency. The list of dependencies must have a constant number of items and be written inline like [dep1, dep2, dep3]. React will compare each dependency with its previous value using the Object.is comparison algorithm.  Note - previously had 'focused' in console.log; removed.
 
   useEffect(() => {
     console.log('focus useEffect triggered');
     //     window.addEventListener('keydown', (this as any).handleKeyDown); results in App.tsx:41 Uncaught TypeError: Cannot read properties of undefined (reading 'handleKeyDown').
+    if (focused) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
 
-    document.addEventListener('keydown', handleKeyDown);
     return () => {
       console.log(`Attempting to remove eventlistener while focused ${focused}`);
       document.removeEventListener('keydown', handleKeyDown);
       // the problem is changing focus refreshes the page, so a new 'handleKeyDown' is created, so the remove reference doesn't work.
+      // above fixed with useCallback.  Note that things got a little weird, probably because no if(focused) in useEffect, causing event listener to be added on mount.  Well it works now anyways.
     };
   } // useEffect anon
-  , [focused])
+    , [focused])
 
   /**
    * addEventListener(type: "keydown", listener: (this: Document, ev: KeyboardEvent) => any, options?: boolean | AddEventListenerOptions): void
@@ -122,7 +125,7 @@ MDN Reference
           <div className='flexh border alignitemscenter'>
             <div>
               <h2>Change Step Value</h2>
-              <input type='number' value={step} onChange={() => {}}/>
+              <input type='number' value={step} onChange={() => { }} />
             </div>
 
           </div>
