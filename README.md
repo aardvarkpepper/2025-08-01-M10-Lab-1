@@ -10,3 +10,7 @@ https://stackoverflow.com/questions/47933175/adding-event-listener-for-keydown-t
 https://react.dev/reference/react/useEffect
 https://react.dev/reference/react/useCallback
 
+## Notes
+
+MDN notes on addEventListener mentioned if an AbortSignal is passed for options's signal, then event listener will be removed when signal is aborted.  
+
