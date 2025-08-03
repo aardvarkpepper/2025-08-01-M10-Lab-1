@@ -11,4 +11,5 @@ https://react.dev/reference/react/useEffect
 https://react.dev/reference/react/useCallback
 https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout
 https://kentcdodds.com/blog/get-a-catch-block-error-message-with-typescript
+https://www.geeksforgeeks.org/reactjs/fetching-data-from-an-api-with-useeffect-and-usestate-hook/
 
