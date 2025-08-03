@@ -3,25 +3,25 @@ import './App.css';
 
 const App: React.FunctionComponent = (): React.ReactNode => {
 
-  console.log('render');
+  //console.log('render');
 
   const initialStepDelay = 3;
   const initialCount = 0;
 
   const [count, setCount] = useState<number>(initialCount);
-  const [arrayOfCount, setArrayOfCount] = useState([initialCount]);
+  const [arrayOfCount, setArrayOfCount] = useState<number[]>([initialCount]);
   const [theme, setTheme] = useState<string>("dark");
   const [delay, setDelay] = useState<number>(initialStepDelay);
   const [step, setStep] = useState<number>(1);
   const [focused, setFocused] = useState<boolean>(false);
-  const [feedbackArray, setFeedbackArray] = useState<string[]>([]); // feedbackArray is strictly additive unless it's wiped, so as an exception, it is safe to use index number as a key.
+  const [feedbackArray, setFeedbackArray] = useState<string[]>([]); // feedbackArray is strictly additive unless it's wiped, so as an exception it is safe to use index number as a key.
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [renderCount, setRenderCount] = useState<number>(1);
 
-  let focusedText = focused ? "This element is currently focused.  Pressing 'ArrowUp' and 'ArrowDown' will increment or decrement count." : "This element is not currently focused.  Pressing 'ArrowUp' and 'ArrowDown' will do nothing.";
+  let focusedText = focused ? "This element is currently focused.  Keypress 'ArrowUp' to increment count, 'ArrowDown' to decrement count." : "This element is not currently focused.  Pressing 'ArrowUp' and 'ArrowDown' will do nothing.";
 
   const handleDelay = () => {
-    setDelay(prev => prev === 0 ? initialStepDelay : 0);
+    setDelay(prev => prev === 0 ? initialStepDelay : 0); // It's a little inelegant that handleDelay is separate to rendering of the button.  But button text shows whatever value state 'delay' is not set to.  This could be handled by making delay [indexToUse: number, arrayOfDelayValues: number[]] and changing indexToUse with +1 / %.
   };
 
   const handleKeyDown = useCallback((event: any) => {
@@ -52,10 +52,20 @@ const App: React.FunctionComponent = (): React.ReactNode => {
     });
   };
 
-  // note this needs to wipe memory too.
+  // 'handleReset', I suppose should call a 'reinitialization' method that uses data imported from another file to reset all values.  The same functionality with modification could be used to load in user data files.  But this is fine for the assignment.
   const handleReset = () => {
     setCount(prev => 0); // may prevent re-render?
     setArrayOfCount(prev => [0]);
+    localStorage.removeItem('m10-lab-1');
+    setCount(initialCount);
+    setArrayOfCount([initialCount]);
+    setTheme("dark");
+    setDelay(initialStepDelay);
+    setStep(1);
+    setFocused(false);
+    setFeedbackArray([]);
+    setErrorMessage(`Data has been reset.`);
+    setRenderCount(1);
   }
 
   const handleStepChange = (stepValue: number) => {
@@ -66,7 +76,6 @@ const App: React.FunctionComponent = (): React.ReactNode => {
     let newValue: number;
     setCount(prev => {
       newValue = prev - step;
-      // console.log(`hSD firing with ${step}`);
       return newValue;
     });
     setArrayOfCount(prev2 => [...prev2, newValue]);
@@ -76,24 +85,14 @@ const App: React.FunctionComponent = (): React.ReactNode => {
     let newValue: number;
     setCount(prev => {
       newValue = prev + step;
-      // console.log(`hSU firing with ${step}`);
       return newValue;
     });
     setArrayOfCount(prev2 => [...prev2, newValue]);
   };
 
-  //whenever count changes, save to localstorage
-  // useeffect cleanup if count changes again before 'save' completes.
-  // reset button clears tracked history (?).
-  /**
-   * 1.  Initial load.  useEffect assigns initial values.
-   * 2.  When count changes, save to localStorage.
-   * 3.  'cleanup' - suppose the user refreshes page.  I think this may cause useEffect cleanup to run.
-   */
-
   const loadFromLocalStorage = () => {
     const retrieveObject = JSON.parse(localStorage.getItem('m10-lab-1') as any);
-    console.log(`loadFromLocalStorage invoked with ${JSON.stringify(retrieveObject)}`);
+    //console.log(`loadFromLocalStorage invoked with ${JSON.stringify(retrieveObject)}`);
     setCount(retrieveObject.count);
     setArrayOfCount(retrieveObject.arrayOfCount);
     setTheme(retrieveObject.theme);
@@ -103,6 +102,7 @@ const App: React.FunctionComponent = (): React.ReactNode => {
     setFeedbackArray(retrieveObject.feedbackArray);
     // setErrorMessage(retrieveObject.errorMessage);
     setErrorMessage(`loadFromLocalStorage render to move data into state.`)
+    setRenderCount(retrieveObject.renderCount);
   };
 
   const saveToLocalStorage = () => {
@@ -114,38 +114,22 @@ const App: React.FunctionComponent = (): React.ReactNode => {
       step: step,
       focused: focused,
       feedbackArray: feedbackArray,
-      errorMessage: errorMessage
+      errorMessage: errorMessage,
+      renderCount: renderCount
     };
-    console.log(`saveToLocalStorage invoked with ${JSON.stringify(storeObject)}`);
+    //console.log(`saveToLocalStorage invoked with ${JSON.stringify(storeObject)}`);
     localStorage.setItem('m10-lab-1', JSON.stringify(storeObject));
   };
 
   useEffect(() => {
-    // console.log('focus useEffect triggered');
     if (focused) {
       document.addEventListener('keydown', handleKeyDown);
     }
 
     return () => {
-      // console.log(`Attempting to remove eventlistener while focused ${focused}`);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [focused]);
-
-
-
-  /**
-   * This simulates saving to a remote API.  Presumably the remote API has some sort of functionality to ensure save data is processed properly.  That is, if a user tries to save a file at time index 1, 2, and 3 in that order, the server may receive those requests at time index 2, 1, 3 in that order.  The server might track 'time sent' then resolve based on that.
-   * Here, the 'server' resolves based on arrayOfCount.length.  First, data is saved async with a 2 second delay, and 'isPseudoLoading' is set to true.  This disables saving.  (Alternately, I could randomize the delay for each; might do this anyways in the end, or rotate through some array for controlled behavior for testing.  Randomizing delay could cause save requests to be received in odd order as described previously).
-   * 
-   * The async delay and prevention of new saves means data is saved at a point in time, after which changes in state can happen, after which 'isPseudoLoading' is set to false and new saves are allowed again.  That means save data can be out of date.
-   * 
-   * However, when the window is shut down or refreshed, useEffect's return function should run.  This return function will instantly save data.  I don't know what happens if it's saved async (note to try this).  This means even though currently saved data is out of state, the saved data is updated with the last updated state in useEffect's cleanup.
-   * 
-   * In other words, while the window is running, saved data can be out of date, especially when a user spams state changes while the saving function is turned off.  However, closing or refreshing should update the data.
-   * 
-   * Note:  I should load the data on loading the page once with useEffect [].
-   */
 
   useEffect(() => {
     let timeoutId: number;
@@ -153,7 +137,7 @@ const App: React.FunctionComponent = (): React.ReactNode => {
       timeoutId = setTimeout((one: string) => {
         setFeedbackArray(prev => {
           return [`Data saved with count ${one} and count history [${arrayOfCount}].`, ...prev]
-        }); // mixing references for future reference.  Eh.
+        }); // mixing references ('one' + String(count)), and directly referencing values for future reference.
       }, delay * 1000, String(count));
     } catch (error) {
       if (error instanceof Error) {
@@ -164,24 +148,18 @@ const App: React.FunctionComponent = (): React.ReactNode => {
       setErrorMessage(`Error of ${error instanceof Error ? 'type Error' : 'unknown type'} has occured, possibly related to async.`);
     } finally {
       return () => {
-        console.log(`useEffect cleanup for save operations invoked. ${renderCount}`);
+        //console.log(`useEffect cleanup for save operations invoked. ${renderCount}`);
         setRenderCount(prev => prev + 1);
         setErrorMessage(`useEffect cleanup for save operations invoked. ${renderCount}`);
         clearTimeout(timeoutId);
-        // saveToLocalStorage();
         /**
-         * saveToLocalStorage cannot be executed during cleanup phase.  When count (listed in this useEffect's dependencies changes, this cleanup function runs before the state of count is updated.  Therefore data that was loaded from localStorage during the initial render gets overwritten.  Could bypass this with useRef, but probably that's beyond scope of assignment).  Besides, return is for cleanup of things executed in the useEffect, not separate functions.  Possibly this may have some bearing.
+         * saveToLocalStorage cannot be executed during cleanup phase.  When count (listed in this useEffect's dependencies changes, this cleanup function runs before the state of count is updated.  So, data that was loaded from localStorage during the initial render gets overwritten.  Could bypass this with useRef, but probably that's beyond scope of assignment).  Besides, return is for cleanup of things executed in the useEffect, not separate functions.  Possibly this may have some bearing.
+         * A similar issue occurs as data is both loaded and saved on render, but this is - workaround or a real solution, I can't say - at any rate, save is made async, so loading happens first.  Trying to make things async here, though, might cause weird side effects that I wouldn't want interacting with the rest of this useEffect's functinoality.  So I split loading and saving into separate useEffects.
          */
-         
       }
     }
   }, [count, arrayOfCount]) // test if this causes execution of useEffect twice.
   // the internals do NOT cause a change in count or arrayOfCount so should not cause infinite re-renders.
-
-  /**
-  Use useEffect to save the current count to local storage whenever it changes.
-  Ensure you handle potential race conditions or cleanup if the count changes again before the “save” completes. (Hint: cleanup function in useEffect).
-  */
 
   useEffect(() => {
     loadFromLocalStorage();
@@ -195,7 +173,7 @@ const App: React.FunctionComponent = (): React.ReactNode => {
       clearTimeout(timeoutId)
     };
   },[count, arrayOfCount, theme, delay, step, focused, feedbackArray, errorMessage]);
-  // in case waiting for async isn't enough, additional 500 ms.
+  // saves async so loading of existing localStorage data completes before saving.  If not async, then localStorage data gets re-initialized then saved ten loaded.  Note in case waiting for async isn't enough, additional 500 ms or whatever.
 
   return (
 
