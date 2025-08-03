@@ -11,6 +11,21 @@ h2 {
   padding: 0px;
 }
 
+.nth-child {
+  border: solid black 1px;  
+}
+.nth-child:nth-child(even) {
+  background-color: lightgray;
+}
+
+.dark .nth-child {
+  border: solid yellow 1px;
+}
+
+.dark .nth-child:nth-child(even) {
+  background-color: darkgreen;
+}
+
 .space-right {
   margin: 0 1rem 0 0;
 }
@@ -129,6 +144,6 @@ input {
 }
 
 .vhvw100 {
-  height: 100vh;
-  width: 100vw;
+  min-height: 100vh;
+  min-width: 100vw;
 }

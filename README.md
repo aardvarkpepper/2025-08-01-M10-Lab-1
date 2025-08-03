@@ -9,8 +9,6 @@ https://developer.mozilla.org/en-US/docs/Web/API/UI_Events/Keyboard_event_code_v
 https://stackoverflow.com/questions/47933175/adding-event-listener-for-keydown-to-react-element
 https://react.dev/reference/react/useEffect
 https://react.dev/reference/react/useCallback
-
-## Notes
-
-MDN notes on addEventListener mentioned if an AbortSignal is passed for options's signal, then event listener will be removed when signal is aborted.  
+https://developer.mozilla.org/en-US/docs/Web/API/Window/setTimeout
+https://kentcdodds.com/blog/get-a-catch-block-error-message-with-typescript
 

@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
-import './App.css'
+import { useCallback, useEffect, useState } from 'react';
+import './App.css';
 
 const App: React.FunctionComponent = (): React.ReactNode => {
 
   console.log('render');
 
-  const initialStepDelay = 2;
+  const initialStepDelay = 3;
   const initialCount = 0;
 
   const [count, setCount] = useState<number>(initialCount);
@@ -14,6 +14,8 @@ const App: React.FunctionComponent = (): React.ReactNode => {
   const [delay, setDelay] = useState<number>(initialStepDelay);
   const [step, setStep] = useState<number>(1);
   const [focused, setFocused] = useState<boolean>(false);
+  const [feedbackArray, setFeedbackArray] = useState<string[]>([]); // feedbackArray is strictly additive unless it's wiped, so as an exception, it is safe to use index number as a key.
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   let focusedText = focused ? "This element is currently focused.  Pressing 'ArrowUp' and 'ArrowDown' will increment or decrement count." : "This element is not currently focused.  Pressing 'ArrowUp' and 'ArrowDown' will do nothing.";
 
@@ -27,18 +29,15 @@ const App: React.FunctionComponent = (): React.ReactNode => {
 
   const handleToggleFocused = () => {
     setFocused(prev => {
-      console.log(`Setting to ${!prev}`);
       return !prev;
     });
   };
 
   const handleKeyDown = useCallback((event: any) => {
     if (event.code === 'ArrowUp') {
-      // handleStepUp();
       let newValue: number;
       setCount(prev => {
         newValue = prev + step;
-        console.log(`hKD firing with ${step}`);
         return newValue;
       });
       setArrayOfCount(prev2 => [...prev2, newValue]);
@@ -46,20 +45,16 @@ const App: React.FunctionComponent = (): React.ReactNode => {
       let newValue: number;
       setCount(prev => {
         newValue = prev - step;
-        console.log(`hKD firing with ${step}`);
         return newValue;
       });
       setArrayOfCount(prev2 => [...prev2, newValue]);
-      // handleStepDown();
     }
-  }, [step]); // dependencies: The list of all reactive values referenced inside of the fn code. Reactive values include props, state, and all the variables and functions declared directly inside your component body. If your linter is configured for React, it will verify that every reactive value is correctly specified as a dependency. The list of dependencies must have a constant number of items and be written inline like [dep1, dep2, dep3]. React will compare each dependency with its previous value using the Object.is comparison algorithm.  Note - previously had 'focused' in console.log; removed.
+  }, [step]); // if 'step' is not included, useCallback uses old values of 'step'.
 
-  // 'step' needs to be in dependencies.  If not, then stuff like NaN or whatever weird things show up, arrow keys don't do what they're supposed to.  Probably what's happening is the function is not really being called each time; it's stored in useCallback or something, along with any references to state.  When 'step' is not listed in dependencies, the old version of the function with the old version of 'step' is called, hence why it increments/decrements by 1 despite step being changed.  Listing 'step' in dependencies, I think causes useCallback to update the function when 'step' is updated, so 'step''s stored value in the stored function correctly updates.  Can't recreate the weird 'NaN' or 'object' or whatever.  Eh.
-
-  // this thing needs to wipe memory too.
+  // note this needs to wipe memory too.
   const handleReset = () => {
-    setCount(0);
-    setArrayOfCount([0]);
+    setCount(prev => 0); // may prevent re-render?
+    setArrayOfCount(prev => [0]);
   }
 
   const handleStepChange = (stepValue: number) => {
@@ -70,50 +65,72 @@ const App: React.FunctionComponent = (): React.ReactNode => {
     let newValue: number;
     setCount(prev => {
       newValue = prev - step;
-      console.log(`hSD firing with ${step}`);
+      // console.log(`hSD firing with ${step}`);
       return newValue;
     });
-    setArrayOfCount(prev2 => [...prev2, newValue]); // calling setArrayOfCount inside setCount causes two renders, causing setArrayOfCount to trigger twice.  Alternate fix would be to simply use last value of setArrayOfCount for count.  Makes more sense in data terms too.  (Don't Repeat Yourself).  But keeping count and arrayOfCount as separate states allows getting used to mixing states, so it's good in the end.
+    setArrayOfCount(prev2 => [...prev2, newValue]);
   };
 
   const handleStepUp = () => {
     let newValue: number;
     setCount(prev => {
       newValue = prev + step;
-      console.log(`hSU firing with ${step}`);
+      // console.log(`hSU firing with ${step}`);
       return newValue;
     });
     setArrayOfCount(prev2 => [...prev2, newValue]);
-  }
+  };
 
   useEffect(() => {
-    console.log('focus useEffect triggered');
+    // console.log('focus useEffect triggered');
     if (focused) {
       document.addEventListener('keydown', handleKeyDown);
     }
 
     return () => {
-      console.log(`Attempting to remove eventlistener while focused ${focused}`);
+      // console.log(`Attempting to remove eventlistener while focused ${focused}`);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [focused]);
 
   /**
-   * Utilize the useEffect hook to perform side effects in response to state changes.
-  Implement proper cleanup functions within useEffect to prevent memory leaks or unexpected behavior.
-  
-  Apply your knowledge to build a feature-rich counter with history tracking, auto-save, keyboard interactions, and a reset mechanism.
-  
+   * This simulates saving to a remote API.  Presumably the remote API has some sort of functionality to ensure save data is processed properly.  That is, if a user tries to save a file at time index 1, 2, and 3 in that order, the server may receive those requests at time index 2, 1, 3 in that order.  The server might track 'time sent' then resolve based on that.
+   * Here, the 'server' resolves based on arrayOfCount.length.  First, data is saved async with a 2 second delay, and 'isPseudoLoading' is set to true.  This disables saving.  (Alternately, I could randomize the delay for each; might do this anyways in the end, or rotate through some array for controlled behavior for testing.  Randomizing delay could cause save requests to be received in odd order as described previously).
+   * 
+   * The async delay and prevention of new saves means data is saved at a point in time, after which changes in state can happen, after which 'isPseudoLoading' is set to false and new saves are allowed again.  That means save data can be out of date.
+   * 
+   * However, when the window is shut down or refreshed, useEffect's return function should run.  This return function will instantly save data.  I don't know what happens if it's saved async (note to try this).  This means even though currently saved data is out of state, the saved data is updated with the last updated state in useEffect's cleanup.
+   * 
+   * In other words, while the window is running, saved data can be out of date, especially when a user spams state changes while the saving function is turned off.  However, closing or refreshing should update the data.
+   * 
+   * Note:  I should load the data on loading the page once with useEffect [].
+   */
+  useEffect(() => {
+    let timeoutId: number;
+    try {
+      timeoutId = setTimeout((one: string) => {
+        setFeedbackArray(prev => {
+          return [`Data saved with count ${one} and count history [${arrayOfCount}].`, ...prev]}); // mixing references for future reference.  Eh.
+      }, delay * 1000, String(count));
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('An error of type Error has occurred while performing useEffect, possibly related to async.', error.message);
+      } else {
+        console.error('An error that is not of type Error has occurred while performing useEffect, possibly related to async.', String(error));
+      }
+      setErrorMessage(`Error of ${error instanceof Error ? 'type Error' : 'unknown type'} has occured, possibly related to async.`);
+    } finally {
+      return () => {
+        clearTimeout(timeoutId); // 
+      }
+    }
+  }, [count, arrayOfCount]) // test if this causes execution of useEffect twice.
+  // the internals do NOT cause a change in count or arrayOfCount so should not cause infinite re-renders.
+
+  /**
   Use useEffect to save the current count to local storage whenever it changes.
   Ensure you handle potential race conditions or cleanup if the count changes again before the “save” completes. (Hint: cleanup function in useEffect).
-  
-  Allow the user to increment the count by pressing the “ArrowUp” key.
-  Allow the user to decrement the count by pressing the “ArrowDown” key.
-  Use useEffect to add and remove these event listeners to the document.
-  Ensure event listeners are cleaned up when the component unmounts or is no longer active.
-  Toggle this with arrowup/arrowdown toggle.  'when the omp
-  
-   */
+  */
 
   return (
 
@@ -157,21 +174,17 @@ const App: React.FunctionComponent = (): React.ReactNode => {
       <div className='flexh jc-spaceevenly alignitemscenter border'>
         <div className='flexh border alignitemscenter'>
           <h2>Previous Counts:</h2>
-          <div>{arrayOfCount.join(", ")}</div>
+          <div>{arrayOfCount.join(",")}</div>
         </div>
       </div>
 
-
-      <div className='flexh jc-spaceevenly border'>
-
-
+      <div className='jc-spaceevenly border'>
+        {feedbackArray.map((element, index) => <div key={`${index}`} className='nth-child'>{(index === 0) ? `LAST ENTRY: ${element}` : element}</div>)}
       </div>
 
-
-
+      <div>{errorMessage}</div>
 
     </div>
-
   )
 }
 
