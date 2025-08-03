@@ -136,7 +136,7 @@ const App: React.FunctionComponent = (): React.ReactNode => {
     try {
       timeoutId = setTimeout((one: string) => {
         setFeedbackArray(prev => {
-          return [`Data saved with count ${one} and count history [${arrayOfCount}].`, ...prev]
+          return [`Data printed with count ${one} and count history [${arrayOfCount}].`, ...prev]
         }); // mixing references ('one' + String(count)), and directly referencing values for future reference.
       }, delay * 1000, String(count));
     } catch (error) {
@@ -163,7 +163,7 @@ const App: React.FunctionComponent = (): React.ReactNode => {
 
   useEffect(() => {
     loadFromLocalStorage();
-  },[]); // run once on render / reload, then no cleanup.
+  }, []); // run once on render / reload, then no cleanup.
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -172,7 +172,7 @@ const App: React.FunctionComponent = (): React.ReactNode => {
     return () => {
       clearTimeout(timeoutId)
     };
-  },[count, arrayOfCount, theme, delay, step, focused, feedbackArray, errorMessage]);
+  }, [count, arrayOfCount, theme, delay, step, focused, feedbackArray, errorMessage]);
   // saves async so loading of existing localStorage data completes before saving.  If not async, then localStorage data gets re-initialized then saved ten loaded.  Note in case waiting for async isn't enough, additional 500 ms or whatever.
 
   return (
@@ -187,9 +187,20 @@ const App: React.FunctionComponent = (): React.ReactNode => {
             <h2>{delay} Seconds. </h2>
           </div>
           <button id='widebutton' onClick={handleDelay}>Set Delay To {delay === 0 ? initialStepDelay : 0} Seconds</button>
-          <div className='mediumsize'>New entries for 'count' are printed and saved to localStorage after a {delay} second delay.</div>
+          <div className='mediumsize'>A message displays at bottom of screen {delay} seconds after a user last changes count. </div>
         </div>
         <button onClick={handleTheme}>Toggle {theme}</button>
+      </div>
+
+      <div className='border'>
+        <p>
+          If delay is set to 3 seconds, no new message will display at bottom of screen until 3 seconds after the last update to count is made.
+        </p>
+        <p>
+          (A patient user could sit all day updating count and nothing would print.)</p>
+        <p>
+          If a user makes, say, 10 updates, then allows the message to display, none of the messages before the last will display.  This illustrates the use of the cleanup function in useEffect, and how commands set to run inside setTimeout will not run if clearTimeout is used with the reference returned by setTimeout.
+        </p>
       </div>
 
       <div className='flexh jc-spaceevenly border'>
@@ -224,9 +235,7 @@ const App: React.FunctionComponent = (): React.ReactNode => {
       <div className='jc-spaceevenly border'>
         {feedbackArray.map((element, index) => <div key={`${index}`} className='nth-child'>{(index === 0) ? `LAST ENTRY: ${element}` : element}</div>)}
       </div>
-
-      <div>{errorMessage}</div>
-
+      {/* <div>{errorMessage}</div> */}
     </div>
   )
 }
